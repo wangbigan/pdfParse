@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF解析工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .main-content {
+            display: flex;
+            padding: 30px;
+        }
+        
+        .upload-section {
+            flex: 1;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            margin-right: 20px;
+        }
+        
+        .preview-section {
+            flex: 1;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .drop-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .drop-area:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .drop-area i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .drop-area h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+        
+        .drop-area p {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .file-info h4 {
+            margin-bottom: 10px;
+        }
+        
+        .file-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .file-detail {
+            text-align: center;
+        }
+        
+        .detail-value {
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+        
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .preview-content {
+            height: 400px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .status.processing {
+            background: rgba(255, 193, 7, 0.2);
+            display: block;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            display: block;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            display: block;
+        }
+        
+        .page-navigation {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            font-weight: 500;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .view-mode {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .mode-btn.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .mode-btn.active:hover {
+            background: #45a049;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .upload-section, .preview-section {
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF解析工具</h1>
+            <p class="subtitle">上传PDF文档，即时解析并展示文本内容。支持任何包含文本的PDF文件，快速提取文档中的文字信息。</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">上传PDF文档</h2>
+                <div class="drop-area" id="dropArea">
+                    <i>📄</i>
+                    <h3>拖放PDF文件到此处</h3>
+                    <p>或</p>
+                    <button class="btn" id="browseBtn">选择文件</button>
+                    <input type="file" id="fileInput" accept=".pdf">
+                </div>
+                
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <h4>已选择文件：</h4>
+                    <p id="fileName"></p>
+                    <div class="file-details">
+                        <div class="file-detail">
+                            <div class="detail-value" id="fileSize">0 KB</div>
+                            <div class="detail-label">文件大小</div>
+                        </div>
+                        <div class="file-detail">
+                            <div class="detail-value" id="filePages">0</div>
+                            <div class="detail-label">页数</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn" id="parseBtn" style="display: none; width: 100%;">解析文档</button>
+                
+                <div class="status processing" id="processingStatus" style="display: none;">
+                    <p>正在解析文档，请稍候...</p>
+                </div>
+                
+                <div class="status success" id="successStatus" style="display: none;">
+                    <p>文档解析成功！</p>
+                </div>
+                
+                <div class="status error" id="errorStatus" style="display: none;">
+                    <p id="errorMessage">解析过程中发生错误</p>
+                </div>
+            </div>
+            
+            <div class="preview-section">
+                <h2 class="section-title">解析结果预览</h2>
+                
+                <!-- 页面导航 -->
+                <div class="page-navigation" id="pageNavigation" style="display: none;">
+                    <div class="nav-controls">
+                        <button class="nav-btn" id="prevPageBtn">← 上一页</button>
+                        <span class="page-info" id="pageInfo">第 1 页 / 共 1 页</span>
+                        <button class="nav-btn" id="nextPageBtn">下一页 →</button>
+                    </div>
+                    <div class="view-mode">
+                        <button class="mode-btn active" id="pageViewBtn">分页查看</button>
+                        <button class="mode-btn" id="fullViewBtn">完整查看</button>
+                    </div>
+                </div>
+                
+                <div class="preview-content" id="previewContent">
+                    <p style="text-align: center; opacity: 0.7;">解析结果将在此处显示</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>PDF解析工具 &copy; 2023 | 基于Node.js构建</p>
+    </footer>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropArea = document.getElementById('dropArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const filePages = document.getElementById('filePages');
+            const parseBtn = document.getElementById('parseBtn');
+            const previewContent = document.getElementById('previewContent');
+            const processingStatus = document.getElementById('processingStatus');
+            const successStatus = document.getElementById('successStatus');
+            const errorStatus = document.getElementById('errorStatus');
+            const pageNavigation = document.getElementById('pageNavigation');
+            const prevPageBtn = document.getElementById('prevPageBtn');
+            const nextPageBtn = document.getElementById('nextPageBtn');
+            const pageInfo = document.getElementById('pageInfo');
+            const pageViewBtn = document.getElementById('pageViewBtn');
+            const fullViewBtn = document.getElementById('fullViewBtn');
+            
+            let selectedFile = null;
+            let currentPageData = null;
+            let currentPageIndex = 0;
+            let viewMode = 'page'; // 'page' or 'full'
+            
+            // 浏览按钮点击事件
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 文件选择变化事件
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // 拖放事件处理
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+                dropArea.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+            }
+            
+            function unhighlight() {
+                dropArea.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                dropArea.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+            }
+            
+            // 文件拖放处理
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length) {
+                    handleFiles(files[0]);
+                }
+            }
+            
+            function handleFileSelect(e) {
+                const files = e.target.files;
+                if (files.length) {
+                    handleFiles(files[0]);
+                }
+            }
+            
+            function handleFiles(file) {
+                // 检查文件类型
+                if (file.type !== 'application/pdf') {
+                    showError('请选择PDF文件');
+                    return;
+                }
+                
+                selectedFile = file;
+                
+                // 更新文件信息
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                
+                // 显示文件信息和解析按钮
+                fileInfo.style.display = 'block';
+                parseBtn.style.display = 'block';
+                
+                // 隐藏状态消息
+                hideStatusMessages();
+                
+                // 模拟获取PDF页数
+                setTimeout(() => {
+                    const pageCount = Math.floor(Math.random() * 10) + 1;
+                    filePages.textContent = pageCount;
+                }, 500);
+            }
+            
+            // 解析按钮点击事件
+            parseBtn.addEventListener('click', async () => {
+                if (!selectedFile) return;
+                
+                // 显示处理中状态
+                showStatus(processingStatus);
+                
+                try {
+                    // 创建FormData对象
+                    const formData = new FormData();
+                    formData.append('pdfFile', selectedFile);
+                    
+                    // 发送请求到后端
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    // 更新页数信息
+                    filePages.textContent = result.pages;
+                    
+                    // 存储页面数据
+                    currentPageData = result;
+                    currentPageIndex = 0;
+                    
+                    // 显示页面导航（如果有分页数据）
+                    if (result.pageContents && result.pageContents.length > 0) {
+                        pageNavigation.style.display = 'flex';
+                        updatePageNavigation();
+                    } else {
+                        pageNavigation.style.display = 'none';
+                    }
+                    
+                    // 显示解析结果
+                    displayContent();
+                    
+                    // 显示成功状态
+                    showStatus(successStatus);
+                    
+                } catch (error) {
+                    console.error('解析错误:', error);
+                    showError('解析PDF时发生错误: ' + error.message);
+                }
+            });
+            
+            // 工具函数
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' bytes';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else return (bytes / 1048576).toFixed(1) + ' MB';
+            }
+            
+            function hideStatusMessages() {
+                processingStatus.style.display = 'none';
+                successStatus.style.display = 'none';
+                errorStatus.style.display = 'none';
+            }
+            
+            function showStatus(element) {
+                hideStatusMessages();
+                element.style.display = 'block';
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                showStatus(errorStatus);
+            }
+            
+            // 显示内容的函数
+            function displayContent() {
+                if (!currentPageData) return;
+                
+                let formattedContent = `文件名: ${currentPageData.filename}\n` +
+                    `文件大小: ${formatFileSize(currentPageData.size)}\n` +
+                    `页数: ${currentPageData.pages}\n\n`;
+                
+                if (viewMode === 'page' && currentPageData.pageContents && currentPageData.pageContents.length > 0) {
+                    // 分页查看模式
+                    const currentPage = currentPageData.pageContents[currentPageIndex];
+                    if (currentPage && currentPage.content) {
+                        formattedContent += `=== 第 ${currentPage.pageNumber} 页 ===\n\n${currentPage.content}`;
+                    }
+                } else {
+                    // 完整查看模式
+                    if (currentPageData.pageContents && currentPageData.pageContents.length > 0) {
+                        formattedContent += '=== 完整文档内容 ===\n\n';
+                        currentPageData.pageContents.forEach(page => {
+                            if (page && page.content) {
+                                formattedContent += `--- 第 ${page.pageNumber} 页 ---\n${page.content}\n\n`;
+                            }
+                        });
+                    } else {
+                        formattedContent += `=== 文档内容 ===\n\n${currentPageData.content}`;
+                    }
+                }
+                
+                previewContent.textContent = formattedContent;
+            }
+            
+            // 更新页面导航状态
+            function updatePageNavigation() {
+                if (!currentPageData || !currentPageData.pageContents) return;
+                
+                const totalPages = currentPageData.pageContents.length;
+                pageInfo.textContent = `第 ${currentPageIndex + 1} 页 / 共 ${totalPages} 页`;
+                
+                prevPageBtn.disabled = currentPageIndex === 0;
+                nextPageBtn.disabled = currentPageIndex === totalPages - 1;
+            }
+            
+            // 页面导航事件监听
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPageIndex > 0) {
+                    currentPageIndex--;
+                    updatePageNavigation();
+                    displayContent();
+                }
+            });
+            
+            nextPageBtn.addEventListener('click', () => {
+                if (currentPageData && currentPageData.pageContents && currentPageIndex < currentPageData.pageContents.length - 1) {
+                    currentPageIndex++;
+                    updatePageNavigation();
+                    displayContent();
+                }
+            });
+            
+            // 查看模式切换
+            pageViewBtn.addEventListener('click', () => {
+                viewMode = 'page';
+                pageViewBtn.classList.add('active');
+                fullViewBtn.classList.remove('active');
+                currentPageIndex = 0;
+                updatePageNavigation();
+                displayContent();
+            });
+            
+            fullViewBtn.addEventListener('click', () => {
+                viewMode = 'full';
+                fullViewBtn.classList.add('active');
+                pageViewBtn.classList.remove('active');
+                displayContent();
+            });
+        });
+    </script>
+</body>
+</html>
